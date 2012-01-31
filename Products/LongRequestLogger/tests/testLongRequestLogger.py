@@ -330,7 +330,7 @@ class TestLongRequestLogger(unittest.TestCase):
         # and there should be no records
         self.assertFalse(self.loghandler.records)
 
-    def testMonitorWithEnvorinmentConfiguration(self):
+    def testMonitorWithEnvironmentConfiguration(self):
         from Products.LongRequestLogger.monitor import Monitor
         os.environ['longrequestlogger_timeout'] = '3.5'
         os.environ['longrequestlogger_interval'] = '2'
