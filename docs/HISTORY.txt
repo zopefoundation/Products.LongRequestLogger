@@ -1,7 +1,14 @@
 Changelog
 =========
 
-1.0
+1.1dev (unreleased)
 -------------------
+
+- Integrate the logging mechanism with Zope's signal handling and ZConfig's
+  rotating file handler so that USR2 signals will cause the long request log
+  to get reopened analogous to the access and event log.
+
+1.0
+---
 
 - Initial release

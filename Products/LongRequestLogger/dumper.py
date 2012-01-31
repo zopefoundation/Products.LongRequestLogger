@@ -1,23 +1,34 @@
 ##############################################################################
 #
-# Copyright (c) 2010 Zope Foundation and Contributors.
+# Copyright (c) 2010,2012 Zope Foundation and Contributors.
 #
 ##############################################################################
 
+from cStringIO import StringIO
+from pprint import pformat
+from thread import get_ident
+import Signals.Signals
+import ZConfig.components.logger.loghandler
+import ZServer.BaseLogger
+import logging
 import os
 import os.path
-import traceback
-import logging
-from cStringIO import StringIO
-from thread import get_ident
 import time
-from pprint import pformat
+import traceback
+
+try:
+    from signal import SIGUSR2
+except ImportError:
+    # Windows doesn't have these (but also doesn't care what the exact
+    # numbers are)
+    SIGUSR2 = 12
 
 try:
     from sys import _current_frames
 except ImportError:
     # Python 2.4 and older
     from threadframe import dict as _current_frames
+
 
 class NullHandler(logging.Handler):
     def __init__(self):
@@ -28,8 +39,9 @@ class NullHandler(logging.Handler):
     def emit(self, *args, **kw):
         pass
 
+
 # we might want to change this name later to something more specific
-logger_name = __name__  
+logger_name = __name__
 log = logging.getLogger(logger_name)
 log.propagate = False
 handler = NullHandler()
@@ -46,21 +58,35 @@ def do_enable():
     # The worse that can happen is that a change in longrequestlogger_file
     # will stop or change the logging destination of an already running request
     logfile = os.environ.get('longrequestlogger_file')
-    if logfile:
-        if logfile != 'null':
-            # to imitate FileHandler
-            logfile = os.path.abspath(logfile)
-        if handler.baseFilename != logfile:
-            log.removeHandler(handler)
-            handler.close()
-            if logfile == 'null':
-                handler = NullHandler()
-            else:
-                handler = logging.FileHandler(logfile)
-                handler.formatter = formatter
-            log.addHandler(handler)
-        return log # which is also True as boolean
-    return None # so that Dumpers know they are disabled
+    if not logfile:
+        return None # so that Dumpers know they are disabled
+
+    if logfile != 'null':
+        # to imitate FileHandler
+        logfile = os.path.abspath(logfile)
+
+    rotate = None
+    if handler.baseFilename != logfile:
+        log.removeHandler(handler)
+        handler.close()
+        if logfile == 'null':
+            handler = NullHandler()
+        elif os.name == 'nt':
+            rotate = Signals.Signals.LogfileRotateHandler
+            handler = ZConfig.components.logger.loghandler.Win32FileHandler(
+                logfile)
+        else:
+            rotate = Signals.Signals.LogfileReopenHandler
+            handler = ZConfig.components.logger.loghandler.FileHandler(
+                logfile)
+        handler.formatter = formatter
+        log.addHandler(handler)
+
+    # Register with Zope 2 signal handlers to support log rotation
+    if rotate and Signals.Signals.SignalHandler:
+        Signals.Signals.SignalHandler.registerHandler(
+            SIGUSR2, rotate([handler]))
+    return log # which is also True as boolean
 
 def get_configuration():
     return dict(
