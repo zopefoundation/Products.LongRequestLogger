@@ -15,6 +15,7 @@ import os
 import os.path
 import time
 import traceback
+import sys
 
 try:
     from signal import SIGUSR2
@@ -24,10 +25,11 @@ except ImportError:
     SIGUSR2 = 12
 
 try:
-    from sys import _current_frames
-except ImportError:
+    sys._current_frames
+except AttributeError:
     # Python 2.4 and older
-    from threadframe import dict as _current_frames
+    import threadframe
+    sys._current_frames = threadframe.dict
 
 
 class NullHandler(logging.Handler):
@@ -152,9 +154,6 @@ class Dumper(object):
         request = self.extract_request(frame)
         return self.format_request(request)
 
-    def get_top_thread_frame(self):
-        return _current_frames()[self.thread_id]
-
     def get_thread_info(self, frame):
         request_info = self.extract_request_info(frame)
         now = time.time()
@@ -166,7 +165,7 @@ class Dumper(object):
         return info
 
     def format_thread(self):
-        frame = self.get_top_thread_frame()
+        frame = sys._current_frames()[self.thread_id]
         output = StringIO()
         thread_info = self.get_thread_info(frame)
         print >> output, thread_info

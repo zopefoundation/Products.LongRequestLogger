@@ -4,11 +4,19 @@ Changelog
 1.1dev (unreleased)
 -------------------
 
+- Some refactoring for code readability.
+
+- Use a `os.pipe()` pair and `select.select()` instead of
+  `threading.Condition` to signal when the monitor should stop tracing
+  the original thread. This avoids a performance bottleneck in some
+  VMWare installations, which seem not to have good performance for locks
+  in certain conditions.
+
 - Integrate the logging mechanism with Zope's signal handling and ZConfig's
   rotating file handler so that USR2 signals will cause the long request log
   to get reopened analogous to the access and event log.
 
-1.0
----
+1.0 (2010-10-28)
+----------------
 
 - Initial release

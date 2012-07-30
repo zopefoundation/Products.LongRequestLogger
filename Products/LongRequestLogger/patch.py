@@ -11,12 +11,12 @@ from Products.LongRequestLogger.monitor import Monitor
 log = getLogger(__name__)
 
 def wrapper(*args, **kw):
-    m = Monitor()
+    monitor = Monitor()
     try:
         result = wrapper.original(*args, **kw)
         return result
     finally:
-        m.stop()
+        monitor.stop()
 
 def do_patch():
     from ZPublisher.Publish import publish_module_standard as original

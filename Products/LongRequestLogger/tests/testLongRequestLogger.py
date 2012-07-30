@@ -4,6 +4,7 @@
 #
 ##############################################################################
 
+import sys
 import unittest
 from cStringIO import StringIO
 from doctest import OutputChecker
@@ -36,8 +37,6 @@ Traceback:
 ...
   File ".../LongRequestLogger/dumper.py", line ..., in format_thread
     traceback.print_stack(frame, file=output)
-  File ".../LongRequestLogger/dumper.py", line ..., in get_top_thread_frame
-    return _current_frames()[self.thread_id]
 ''')
 
 check_log = SimpleOutputChecker('''
@@ -49,8 +48,6 @@ Traceback:
     self.log.warning(self.format_thread())
   File ".../LongRequestLogger/dumper.py", line ..., in format_thread
     traceback.print_stack(frame, file=output)
-  File ".../LongRequestLogger/dumper.py", line ..., in get_top_thread_frame
-    return _current_frames()[self.thread_id]
 ''')
 
 check_monitor_log = SimpleOutputChecker('''
@@ -259,7 +256,8 @@ class TestLongRequestLogger(unittest.TestCase):
         from Products.LongRequestLogger.dumper import Dumper
         def callable():
             dumper = Dumper()
-            return dumper.extract_request(dumper.get_top_thread_frame())
+            frame = sys._current_frames()[dumper.thread_id]
+            return dumper.extract_request(frame)
 
         request = self.makeRequest('/foo')
         retrieved_request = call_object(callable, (), request)
@@ -285,9 +283,7 @@ class TestLongRequestLogger(unittest.TestCase):
         s = Sleeper(0.01)
         s.sleep()
         self.assertTrue(m.isAlive())
-        self.assertTrue(m.running)
         m.stop()
-        self.assertFalse(m.running)
         self.assertFalse(m.isAlive())
         # unless this test is so slow that there were 2 seconds interval
         # between starting the monitor and stopping it, there should be no
@@ -297,7 +293,7 @@ class TestLongRequestLogger(unittest.TestCase):
     def testMonitorStopAfterTimeout(self):
         from Products.LongRequestLogger.monitor import Monitor
         m = Monitor()
-        s = Sleeper(m.timeout + 0.5) 
+        s = Sleeper(m.dumper.timeout + 0.5)
         # sleep a little more than the timeout to be on the safe side
         s.sleep()
         m.stop()
@@ -306,7 +302,7 @@ class TestLongRequestLogger(unittest.TestCase):
     def testMonitorStopAfterTimeoutAndTwoIntervals(self):
         from Products.LongRequestLogger.monitor import Monitor
         m = Monitor()
-        s = Sleeper(m.timeout + 2 * m.interval + 0.5) 
+        s = Sleeper(m.dumper.timeout + 2 * m.dumper.interval + 0.5)
         # sleep a little more than timeout + intervals to be on the safe
         # side
         s.sleep()
@@ -315,17 +311,17 @@ class TestLongRequestLogger(unittest.TestCase):
 
     def testMonitorConfigurationDisabled(self):
         from Products.LongRequestLogger.monitor import Monitor
+        from Products.LongRequestLogger.dumper import DEFAULT_TIMEOUT
+        from Products.LongRequestLogger.dumper import DEFAULT_INTERVAL
         os.environ['longrequestlogger_file'] = ''
         m = Monitor()
-        s = Sleeper(m.timeout + 2 * m.interval + 0.5) 
+        s = Sleeper(DEFAULT_TIMEOUT + 2 * DEFAULT_INTERVAL + 0.5)
         # sleep a little more than timeout + intervals
         s.sleep()
         # the thread shouldn't run disabled
         self.assertFalse(m.isAlive())
-        self.assertFalse(m.running)
         # stopping shouldn't break nonetheless
         m.stop()
-        self.assertFalse(m.running)
         self.assertFalse(m.isAlive())
         # and there should be no records
         self.assertFalse(self.loghandler.records)
@@ -335,7 +331,7 @@ class TestLongRequestLogger(unittest.TestCase):
         os.environ['longrequestlogger_timeout'] = '3.5'
         os.environ['longrequestlogger_interval'] = '2'
         m = Monitor()
-        s = Sleeper(m.timeout + m.interval + 0.5) 
+        s = Sleeper(m.dumper.timeout + m.dumper.interval + 0.5)
         # sleep a little more than the timeout to be on the safe side
         s.sleep()
         m.stop()
