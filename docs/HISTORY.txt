@@ -2,7 +2,7 @@ Changelog
 =========
 
 1.1.0 (2012-09-10)
-----------------
+------------------
 
 - Some refactoring for code readability.
 
@@ -17,6 +17,6 @@ Changelog
   to get reopened analogous to the access and event log.
 
 1.0.0 (2010-10-28)
-----------------
+------------------
 
 - Initial release
