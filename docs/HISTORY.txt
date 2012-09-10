@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.1 (2012-09-10)
+1.1.0 (2012-09-10)
 ----------------
 
 - Some refactoring for code readability.
@@ -16,7 +16,7 @@ Changelog
   rotating file handler so that USR2 signals will cause the long request log
   to get reopened analogous to the access and event log.
 
-1.0 (2010-10-28)
+1.0.0 (2010-10-28)
 ----------------
 
 - Initial release
