@@ -1,8 +1,8 @@
 Changelog
 =========
 
-1.1dev (unreleased)
--------------------
+1.1 (2012-09-10)
+----------------
 
 - Some refactoring for code readability.
 
