@@ -9,8 +9,6 @@ import unittest
 from cStringIO import StringIO
 from doctest import OutputChecker
 from doctest import REPORT_UDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
-
-from Products.LongRequestLogger.tests.common import Sleeper
 import os
 
 class SimpleOutputChecker(OutputChecker):
@@ -39,65 +37,8 @@ Traceback:
     traceback.print_stack(frame, file=output)
 ''')
 
-check_log = SimpleOutputChecker('''
-Products.LongRequestLogger.dumper WARNING
-  Thread ...: Started on ...; Running for 0.0 secs; [No request]
-Traceback:
-...
-  File ".../LongRequestLogger/dumper.py", line ..., in __call__
-    self.log.warning(self.format_thread())
-  File ".../LongRequestLogger/dumper.py", line ..., in format_thread
-    traceback.print_stack(frame, file=output)
-''')
-
-check_monitor_log = SimpleOutputChecker('''
-Products.LongRequestLogger.dumper WARNING
-  Thread ...: Started on ...; Running for 2.0 secs; [No request]
-Traceback:
-...
-  File ".../LongRequestLogger/tests/common.py", line ..., in sleep
-    self._sleep1()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep1
-    self._sleep2()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
-    time.sleep(self.interval)
-''')
-
-check_monitor_2_intervals_log = SimpleOutputChecker('''
-Products.LongRequestLogger.dumper WARNING
-  Thread ...: Started on ...; Running for 2.0 secs; [No request]
-Traceback:
-...
-  File ".../LongRequestLogger/tests/common.py", line ..., in sleep
-    self._sleep1()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep1
-    self._sleep2()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
-    time.sleep(self.interval)
-Products.LongRequestLogger.dumper WARNING
-  Thread ...: Started on ...; Running for 3.0 secs; [No request]
-Traceback:
-...
-  File ".../LongRequestLogger/tests/common.py", line ..., in sleep
-    self._sleep1()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep1
-    self._sleep2()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
-    time.sleep(self.interval)
-Products.LongRequestLogger.dumper WARNING
-  Thread ...: Started on ...; Running for 4.0 secs; [No request]
-Traceback:
-...
-  File ".../LongRequestLogger/tests/common.py", line ..., in sleep
-    self._sleep1()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep1
-    self._sleep2()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
-    time.sleep(self.interval)
-''')
-
 check_publishing_1_interval_log = SimpleOutputChecker('''
-Products.LongRequestLogger.dumper WARNING
+Products.LongRequestLogger WARNING
   Thread ...: Started on ...; Running for 2.0 secs; request: GET http://localhost
 retry count: 0
 form: {}
@@ -112,8 +53,8 @@ other: {'ACTUAL_URL': 'http://localhost',
  'method': 'GET'}
 Traceback:
 ...
-  File ".../LongRequestLogger/patch.py", line ..., in wrapper
-    result = wrapper.original(*args, **kw)
+  File ".../LongRequestLogger/__init__.py", line ..., in publish_module_standard
+    return publish_module_standard.original(*args, **kw)
   File ".../ZPublisher/Publish.py", line ..., in publish_module_standard
     response = publish(request, module_name, after_list, debug=debug)
 ...
@@ -125,7 +66,7 @@ Traceback:
     self._sleep2()
   File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
     time.sleep(self.interval)
-Products.LongRequestLogger.dumper WARNING
+Products.LongRequestLogger WARNING
   Thread ...: Started on ...; Running for 3.0 secs; request: GET http://localhost
 retry count: 0
 form: {}
@@ -140,8 +81,8 @@ other: {'ACTUAL_URL': 'http://localhost',
  'method': 'GET'}
 Traceback:
 ...
-  File ".../LongRequestLogger/patch.py", line ..., in wrapper
-    result = wrapper.original(*args, **kw)
+  File ".../LongRequestLogger/__init__.py", line ..., in publish_module_standard
+    return publish_module_standard.original(*args, **kw)
   File ".../ZPublisher/Publish.py", line ..., in publish_module_standard
     response = publish(request, module_name, after_list, debug=debug)
 ...
@@ -165,32 +106,9 @@ other: {'RESPONSE': HTTPResponse(''),
  'method': 'GET'}
 ''')
 
-check_monitor_environment_log = SimpleOutputChecker('''
-Products.LongRequestLogger.dumper WARNING
-  Thread ...: Started on ...; Running for 3.5 secs; [No request]
-Traceback:
-...
-  File ".../LongRequestLogger/tests/common.py", line ..., in sleep
-    self._sleep1()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep1
-    self._sleep2()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
-    time.sleep(self.interval)
-Products.LongRequestLogger.dumper WARNING
-  Thread ...: Started on ...; Running for 5.5 secs; [No request]
-Traceback:
-...
-  File ".../LongRequestLogger/tests/common.py", line ..., in sleep
-    self._sleep1()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep1
-    self._sleep2()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
-    time.sleep(self.interval)
-''')
-
 
 config_env_variables = dict(
-    longrequestlogger_file='null',
+    longrequestlogger_file=os.devnull,
     longrequestlogger_timeout=None,
     longrequestlogger_interval=None,
 )
@@ -198,17 +116,19 @@ config_env_variables = dict(
 class TestLongRequestLogger(unittest.TestCase):
 
     def setUp(self):
-        from Products.LongRequestLogger.patch import do_patch
-        from Products.LongRequestLogger.dumper import logger_name
+        from Products.LongRequestLogger import do_patch, monitor, dumper
         from zope.testing.loggingsupport import InstalledHandler
         self.setTestEnvironment()
-        do_patch()
-        self.loghandler = InstalledHandler(logger_name)
+        log = dumper.getLogger()
+        self.monitor = monitor.Monitor(log, **dumper.get_configuration())
+        do_patch(self.monitor)
+        self.loghandler = InstalledHandler(log.name)
         self.requests = []
 
     def tearDown(self):
-        from Products.LongRequestLogger.patch import do_unpatch
+        from Products.LongRequestLogger import do_unpatch
         do_unpatch()
+        self.monitor.stop()
         self.restoreTestEnvironment()
         self.loghandler.uninstall()
         for request in self.requests:
@@ -268,82 +188,6 @@ class TestLongRequestLogger(unittest.TestCase):
         dumper = Dumper()
         request = self.makeRequest('/foo/bar')
         check_request_formating(dumper.format_request(request))
-
-    def testDumperLog(self):
-        from Products.LongRequestLogger.dumper import Dumper
-        dumper = Dumper()
-        # check the dumper will log what we expect when called
-        dumper()
-        check_log(str(self.loghandler))
-
-    def testMonitorStopBeforeTimeout(self):
-        from Products.LongRequestLogger.monitor import Monitor
-        m = Monitor()
-        # sleep just a little to let the other thread start
-        s = Sleeper(0.01)
-        s.sleep()
-        self.assertTrue(m.isAlive())
-        m.stop()
-        self.assertFalse(m.isAlive())
-        # unless this test is so slow that there were 2 seconds interval
-        # between starting the monitor and stopping it, there should be no
-        # logged messages
-        self.assertFalse(self.loghandler.records)
-
-    def testMonitorStopAfterTimeout(self):
-        from Products.LongRequestLogger.monitor import Monitor
-        m = Monitor()
-        s = Sleeper(m.dumper.timeout + 0.5)
-        # sleep a little more than the timeout to be on the safe side
-        s.sleep()
-        m.stop()
-        check_monitor_log(str(self.loghandler))
-
-    def testMonitorStopAfterTimeoutAndTwoIntervals(self):
-        from Products.LongRequestLogger.monitor import Monitor
-        m = Monitor()
-        s = Sleeper(m.dumper.timeout + 2 * m.dumper.interval + 0.5)
-        # sleep a little more than timeout + intervals to be on the safe
-        # side
-        s.sleep()
-        m.stop()
-        check_monitor_2_intervals_log(str(self.loghandler))
-
-    def testMonitorConfigurationDisabled(self):
-        from Products.LongRequestLogger.monitor import Monitor
-        from Products.LongRequestLogger.dumper import DEFAULT_TIMEOUT
-        from Products.LongRequestLogger.dumper import DEFAULT_INTERVAL
-        os.environ['longrequestlogger_file'] = ''
-        m = Monitor()
-        s = Sleeper(DEFAULT_TIMEOUT + 2 * DEFAULT_INTERVAL + 0.5)
-        # sleep a little more than timeout + intervals
-        s.sleep()
-        # the thread shouldn't run disabled
-        self.assertFalse(m.isAlive())
-        # stopping shouldn't break nonetheless
-        m.stop()
-        self.assertFalse(m.isAlive())
-        # and there should be no records
-        self.assertFalse(self.loghandler.records)
-
-    def testMonitorWithEnvironmentConfiguration(self):
-        from Products.LongRequestLogger.monitor import Monitor
-        os.environ['longrequestlogger_timeout'] = '3.5'
-        os.environ['longrequestlogger_interval'] = '2'
-        m = Monitor()
-        s = Sleeper(m.dumper.timeout + m.dumper.interval + 0.5)
-        # sleep a little more than the timeout to be on the safe side
-        s.sleep()
-        m.stop()
-        check_monitor_environment_log(str(self.loghandler))
-
-    def testIsPatched(self):
-        import ZPublisher.Publish
-        import Products.LongRequestLogger
-        self.assertEquals(
-            ZPublisher.Publish.publish_module_standard,
-            Products.LongRequestLogger.patch.wrapper
-        )
 
     def testPublish(self):
         from ZPublisher.Publish import publish_module_standard

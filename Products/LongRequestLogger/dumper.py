@@ -12,10 +12,10 @@ import ZConfig.components.logger.loghandler
 import ZServer.BaseLogger
 import logging
 import os
-import os.path
 import time
 import traceback
 import sys
+from . import __name__ as logger_name
 
 try:
     from signal import SIGUSR2
@@ -24,49 +24,19 @@ except ImportError:
     # numbers are)
     SIGUSR2 = 12
 
-
-class NullHandler(logging.Handler):
-    def __init__(self):
-        logging.Handler.__init__(self)
-        # for comparison purposes below
-        self.baseFilename = 'null'
-
-    def emit(self, *args, **kw):
-        pass
-
-
-# we might want to change this name later to something more specific
-logger_name = __name__
-log = logging.getLogger(logger_name)
-log.propagate = False
-handler = NullHandler()
-log.addHandler(handler)
-
 formatter = logging.Formatter("%(asctime)s - %(message)s")
 
 DEFAULT_TIMEOUT = 2
 DEFAULT_INTERVAL = 1
 
-def do_enable():
-    global handler
-    # this function is not exactly thread-safe, but it shouldn't matter.
-    # The worse that can happen is that a change in longrequestlogger_file
-    # will stop or change the logging destination of an already running request
+def getLogger(name=logger_name):
     logfile = os.environ.get('longrequestlogger_file')
-    if not logfile:
-        return None # so that Dumpers know they are disabled
-
-    if logfile != 'null':
+    if logfile:
+        log = logging.getLogger(name)
+        log.propagate = False
         # to imitate FileHandler
         logfile = os.path.abspath(logfile)
-
-    rotate = None
-    if handler.baseFilename != logfile:
-        log.removeHandler(handler)
-        handler.close()
-        if logfile == 'null':
-            handler = NullHandler()
-        elif os.name == 'nt':
+        if os.name == 'nt':
             rotate = Signals.Signals.LogfileRotateHandler
             handler = ZConfig.components.logger.loghandler.Win32FileHandler(
                 logfile)
@@ -75,13 +45,12 @@ def do_enable():
             handler = ZConfig.components.logger.loghandler.FileHandler(
                 logfile)
         handler.formatter = formatter
+        # Register with Zope 2 signal handlers to support log rotation
+        if Signals.Signals.SignalHandler:
+            Signals.Signals.SignalHandler.registerHandler(
+                SIGUSR2, rotate([handler]))
         log.addHandler(handler)
-
-    # Register with Zope 2 signal handlers to support log rotation
-    if rotate and Signals.Signals.SignalHandler:
-        Signals.Signals.SignalHandler.registerHandler(
-            SIGUSR2, rotate([handler]))
-    return log # which is also True as boolean
+        return log
 
 def get_configuration():
     return dict(
@@ -108,14 +77,6 @@ class Dumper(object):
             thread_id = get_ident()
         self.thread_id = thread_id
         self.start = time.time()
-        # capture it here in case it gets disabled in the future
-        self.log = do_enable()
-        conf = get_configuration()
-        self.timeout = conf['timeout']
-        self.interval = conf['interval']
-
-    def is_enabled(self):
-        return bool(self.log)
 
     def format_request(self, request):
         if request is None:
@@ -166,6 +127,3 @@ class Dumper(object):
         traceback.print_stack(frame, file=output)
         del frame
         return output.getvalue()
-
-    def __call__(self):
-        self.log.warning(self.format_thread())
