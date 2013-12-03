@@ -24,13 +24,6 @@ except ImportError:
     # numbers are)
     SIGUSR2 = 12
 
-try:
-    sys._current_frames
-except AttributeError:
-    # Python 2.4 and older
-    import threadframe
-    sys._current_frames = threadframe.dict
-
 
 class NullHandler(logging.Handler):
     def __init__(self):

@@ -33,13 +33,6 @@ setup(name='Products.LongRequestLogger',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'Zope2',
       ],
-      extras_require=dict(
-           # With Python versions < 2.5, we need the threadframe module 
-           python24=['threadframe'],
-           # we need to work with Zope 2.8 buildouts that might not provide a 
-           # Zope2 egg (fake or otherwise). So we declare the full dependency
-           # here.
-           standalone=['Zope2'],
-      ),
 )

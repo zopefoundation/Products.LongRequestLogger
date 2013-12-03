@@ -6,7 +6,7 @@
 
 import sys
 from logging import getLogger
-from Products.LongRequestLogger.monitor import Monitor
+from .monitor import Monitor
 
 log = getLogger(__name__)
 

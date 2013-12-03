@@ -15,21 +15,8 @@ Installation
 Buildout Installation
 ---------------------
 
-Add "Products.LongRequestLogger[standalone]" to the list of eggs of the part
+Add "Products.LongRequestLogger" to the list of eggs of the part
 that defines your Zope instance.
-
-Buildout Installation for Old Zope Versions
--------------------------------------------
-
-Add "Products.LongRequestLogger[python24]" to the list of eggs of the part
-that defines your Zope instance. This will automatically pull in the
-'threadframe' module which is needed for Python versions < 2.5.
-
-Manual Installation for Old Zope Versions
------------------------------------------
-
-Add the LongRequestLogger package inside your Products instance directory and
-install the 'threadframe' module into the Python interpreter used to run Zope.
 
 Configuration
 =============
@@ -64,7 +51,7 @@ is due to two reasons:
  1. The environment variable can be changed at runtime to affect the behaviour
     of the logger.
 
- 2. Old Zope versions don't have the ability to use "product-config" syntax,
+ 2. Old Zope versions did't have the ability to use "product-config" syntax,
     and writing a ZConfig component for just 3 keys is overkill.
 
 Runtime Configuration

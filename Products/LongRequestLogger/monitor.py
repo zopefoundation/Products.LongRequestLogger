@@ -7,7 +7,7 @@
 import os
 from select import select
 from threading import Thread
-from Products.LongRequestLogger.dumper import Dumper
+from .dumper import Dumper
 
 class Monitor(Thread):
     """Logs the stack-trace of a thread until it's stopped
