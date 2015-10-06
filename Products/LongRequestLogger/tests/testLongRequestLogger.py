@@ -30,11 +30,10 @@ class SimpleOutputChecker(OutputChecker):
 
 check_dump = SimpleOutputChecker('''
 Thread ...: Started on ...; Running for 0.0 secs; [No request]
-<BLANKLINE>
 Traceback:
 ...
   File ".../LongRequestLogger/dumper.py", line ..., in format_thread
-    traceback.print_stack(frame, file=output)
+    traceback.print_stack(frame, file=body)
 ''')
 
 check_publishing_1_interval_log = SimpleOutputChecker('''
@@ -67,33 +66,7 @@ Traceback:
   File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
     time.sleep(self.interval)
 Products.LongRequestLogger WARNING
-  Thread ...: Started on ...; Running for 3.0 secs; request: GET http://localhost
-retry count: 0
-form: {}
-other: {'ACTUAL_URL': 'http://localhost',
- 'PARENTS': [],
- 'PUBLISHED': <Products.LongRequestLogger.tests.common.App object at 0x...>,
- 'RESPONSE': HTTPResponse(''),
- 'SERVER_URL': 'http://localhost',
- 'TraversalRequestNameStack': [],
- 'URL': 'http://localhost',
- 'interval': 3.5,
- 'method': 'GET'}
-Traceback:
-...
-  File ".../LongRequestLogger/__init__.py", line ..., in publish_module_standard
-    return publish_module_standard.original(*args, **kw)
-  File ".../ZPublisher/Publish.py", line ..., in publish_module_standard
-    response = publish(request, module_name, after_list, debug=debug)
-...
-  File ".../LongRequestLogger/tests/common.py", line ..., in __call__
-    Sleeper(interval).sleep()
-  File ".../LongRequestLogger/tests/common.py", line ..., in sleep
-    self._sleep1()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep1
-    self._sleep2()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
-    time.sleep(self.interval)
+  Thread ...: Started on ...; Running for 3.0 secs; Same.
 ''')
 
 check_request_formating = SimpleOutputChecker('''

@@ -60,15 +60,17 @@ def get_configuration():
                                        DEFAULT_INTERVAL)),
     )
 
-THREAD_FORMAT = "Thread %s: Started on %.1f; Running for %.1f secs; %s"
-REQUEST_FORMAT = """
+SUBJECT_FORMAT = "Thread %s: Started on %.1f; Running for %.1f secs; "
+REQUEST_FORMAT = """\
 request: %(method)s %(url)s
 retry count: %(retries)s
 form: %(form)s
 other: %(other)s
-""".strip()
+"""
 
 class Dumper(object):
+
+    _last = None
 
     def __init__(self, thread_id=None):
         if thread_id is None:
@@ -80,15 +82,15 @@ class Dumper(object):
 
     def format_request(self, request):
         if request is None:
-            return "[No request]"
-        url = request.getURL()
-        if request.get('QUERY_STRING'):
-            url += '?' + request['QUERY_STRING']
-        retries = request.retry_count
-        method = request['REQUEST_METHOD']
-        form = pformat(request.form)
-        other = pformat(request.other)
-        return REQUEST_FORMAT % locals()
+            return "[No request]\n"
+        query = request.get("QUERY_STRING")
+        return REQUEST_FORMAT % {
+            "method": request["REQUEST_METHOD"],
+            "url": request.getURL() + ("?" + query if query else ""),
+            "retries": request.retry_count,
+            "form": pformat(request.form),
+            "other": pformat(request.other),
+        }
 
     def extract_request(self, frame):
         # We try to fetch the request from the 'call_object' function because
@@ -98,32 +100,23 @@ class Dumper(object):
         from ZPublisher.Publish import call_object
         func_code = call_object.func_code #@UndefinedVariable
         while frame is not None:
-            code = frame.f_code
-            if (code is func_code):
-                request = frame.f_locals.get('request')
-                return request
+            if frame.f_code is func_code:
+                return frame.f_locals.get('request')
             frame = frame.f_back
 
-    def extract_request_info(self, frame):
-        request = self.extract_request(frame)
-        return self.format_request(request)
-
-    def get_thread_info(self, frame):
-        request_info = self.extract_request_info(frame)
-        now = time.time()
-        runtime = now - self.start
-        info = THREAD_FORMAT % (self.thread_id,
-                                self.start,
-                                runtime,
-                                request_info)
-        return info
-
     def format_thread(self):
+        subject = SUBJECT_FORMAT % (self.thread_id, self.start,
+                                    time.time() - self.start)
+        body = StringIO()
         frame = sys._current_frames()[self.thread_id]
-        output = StringIO()
-        thread_info = self.get_thread_info(frame)
-        print >> output, thread_info
-        print >> output, "Traceback:"
-        traceback.print_stack(frame, file=output)
-        del frame
-        return output.getvalue()
+        try:
+            body.write(self.format_request(self.extract_request(frame)))
+            body.write("Traceback:\n")
+            traceback.print_stack(frame, file=body)
+        finally:
+            del frame
+        body = body.getvalue()
+        if self._last == body:
+            return subject + "Same.\n"
+        self._last = body
+        return subject + body
