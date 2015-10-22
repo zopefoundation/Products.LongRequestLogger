@@ -104,6 +104,20 @@ class Dumper(object):
                 return frame.f_locals.get('request')
             frame = frame.f_back
 
+    # A fork of ZMySQLDA is maintained in ERP5 (http://www.erp5.com/)
+    try:
+        from Products.ZMySQLDA.db import DB
+    except ImportError:
+        def extract_sql(self, frame):
+            pass
+    else:
+        def extract_sql(self, frame, func_code=DB._query.func_code):
+            while frame is not None:
+                if frame.f_code is func_code:
+                    return frame.f_locals['query']
+                frame = frame.f_back
+        del DB
+
     def format_thread(self):
         subject = SUBJECT_FORMAT % (self.thread_id, self.start,
                                     time.time() - self.start)
@@ -113,6 +127,9 @@ class Dumper(object):
             body.write(self.format_request(self.extract_request(frame)))
             body.write("Traceback:\n")
             traceback.print_stack(frame, file=body)
+            query = self.extract_sql(frame)
+            if query:
+                body.write("SQL Query:\n%s\n" % query)
         finally:
             del frame
         body = body.getvalue()
