@@ -80,18 +80,12 @@ other: {'RESPONSE': HTTPResponse(''),
 ''')
 
 
-config_env_variables = dict(
-    longrequestlogger_file=os.devnull,
-    longrequestlogger_timeout=None,
-    longrequestlogger_interval=None,
-)
-
 class TestLongRequestLogger(unittest.TestCase):
 
     def setUp(self):
         from Products.LongRequestLogger import do_patch, monitor, dumper
         from zope.testing.loggingsupport import InstalledHandler
-        self.setTestEnvironment()
+        dumper.config = dict(logfile=os.devnull)
         log = dumper.getLogger()
         self.monitor = monitor.Monitor(log, **dumper.get_configuration())
         do_patch(self.monitor)
@@ -102,24 +96,10 @@ class TestLongRequestLogger(unittest.TestCase):
         from Products.LongRequestLogger import do_unpatch
         do_unpatch()
         self.monitor.stop()
-        self.restoreTestEnvironment()
         self.loghandler.uninstall()
         for request in self.requests:
             request.response.stdout.close()
             request.clear()
-
-    def setTestEnvironment(self):
-        self.old_env = {}
-        for var, value in config_env_variables.items():
-            self.old_env[var] = os.environ.pop(var, None)
-            if value:
-                os.environ[var] = value
-
-    def restoreTestEnvironment(self):
-        for var, value in self.old_env.items():
-            os.environ.pop(var, None)
-            if value is not None:
-                os.environ[var] = value
 
     def makeRequest(self, path='/', **kw):
         # create fake request and response for convenience

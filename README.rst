@@ -21,38 +21,28 @@ that defines your Zope instance.
 Configuration
 =============
 
-Add (or change) the "environment" section of your zope.conf to something like
-this::
+Add (or change) a "<product-config LongRequestLogger>" section of your
+zope.conf to something like this::
 
-    # Products.LongRequestLogger config
-    <environment>
-          longrequestlogger_file $INSTANCE/log/longrequest.log
-          longrequestlogger_timeout 4
-          longrequestlogger_interval 2
-    </environment>
+    <product-config LongRequestLogger>
+        logfile $INSTANCE/log/longrequest.log0.log
+        timeout 4
+        interval 2
+    </product-config>
 
 The following variables are recognised:
 
- * "longrequestlogger_file": This is a mandatory variable. Its absence means the
+ * "logfile": This is a mandatory variable. Its absence means the
    LongRequestLogger monkey-patch to the publication machinery will not be
    applied. It should point to a file where you want the long requests to be
    logged.
 
- * "longrequestlogger_timeout": The amount of seconds after which long requests
+ * "timeout": The amount of seconds after which long requests
    start being logged. Accepts floating point values and defaults to 2.
 
- * "longrequestlogger_interval": The frequency at which long requests will have
+ * "interval": The frequency at which long requests will have
    their stack trace logged once they have exceeded their 'timeout' above.
    Defaults to 1 and accepts floating point values.
-
-For the curious, the use of environment variables instead of ZConfig directives
-is due to two historical reasons:
-
- 1. In previous versions, the environment variable could be changed at runtime
-    to affect the behaviour of the logger.
-
- 2. Old Zope versions didn't have the ability to use "product-config" syntax,
-    and writing a ZConfig component for just 3 keys is overkill.
 
 Interpreting results
 ====================

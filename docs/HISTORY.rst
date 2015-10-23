@@ -4,6 +4,9 @@ Changelog
 2.0.0 (unreleased)
 ------------------
 
+- Configuration is now done with a "product-config" section in zope.conf,
+  instead of environment variables.
+
 - Log queries executed by ZMySQLDA.
 
 - Consolidate stack trace output to a single line if it's the same as the

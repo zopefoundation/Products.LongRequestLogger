@@ -7,6 +7,7 @@
 from cStringIO import StringIO
 from pprint import pformat
 from thread import get_ident
+from App.config import getConfiguration
 import Signals.Signals
 import ZConfig.components.logger.loghandler
 import ZServer.BaseLogger
@@ -24,13 +25,18 @@ except ImportError:
     # numbers are)
     SIGUSR2 = 12
 
+try:
+    config = getConfiguration().product_config['longrequestlogger']
+except (AttributeError, KeyError):
+    config = {}
+
 formatter = logging.Formatter("%(asctime)s - %(message)s")
 
 DEFAULT_TIMEOUT = 2
 DEFAULT_INTERVAL = 1
 
 def getLogger(name=logger_name):
-    logfile = os.environ.get('longrequestlogger_file')
+    logfile = config.get('logfile')
     if logfile:
         log = logging.getLogger(name)
         log.propagate = False
@@ -54,10 +60,8 @@ def getLogger(name=logger_name):
 
 def get_configuration():
     return dict(
-        timeout=float(os.environ.get('longrequestlogger_timeout', 
-                                       DEFAULT_TIMEOUT)),
-        interval=float(os.environ.get('longrequestlogger_interval', 
-                                       DEFAULT_INTERVAL)),
+        timeout=float(config.get('timeout', DEFAULT_TIMEOUT)),
+        interval=float(config.get('interval', DEFAULT_INTERVAL)),
     )
 
 SUBJECT_FORMAT = "Thread %s: Started on %.1f; Running for %.1f secs; "
