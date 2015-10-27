@@ -1,0 +1,12 @@
+/.installed.cfg
+/bin
+/develop-eggs
+/dist
+/eggs
+/include
+/lib
+/local
+/pip-selfcheck.json
+/parts
+*.egg-info
+*.pyc
