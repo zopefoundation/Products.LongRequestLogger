@@ -46,25 +46,13 @@ The following variables are recognised:
    Defaults to 1 and accepts floating point values.
 
 For the curious, the use of environment variables instead of ZConfig directives
-is due to two reasons:
+is due to two historical reasons:
 
- 1. The environment variable can be changed at runtime to affect the behaviour
-    of the logger.
+ 1. In previous versions, the environment variable could be changed at runtime
+    to affect the behaviour of the logger.
 
- 2. Old Zope versions did't have the ability to use "product-config" syntax,
+ 2. Old Zope versions didn't have the ability to use "product-config" syntax,
     and writing a ZConfig component for just 3 keys is overkill.
-
-Runtime Configuration
----------------------
-
-On the first point above, changing the longrequestlogger_file variable changes
-the logging destination for all subsequent requests after the change (and
-likely any ongoing request as well), but if Zope is started without that
-variable defined, then setting at runtime will not have any effect.
-
-The other two variables can also be dynamically changed as well, and will take
-effect at the following request after the change, for all threads in the same
-process.
 
 Interpreting results
 ====================

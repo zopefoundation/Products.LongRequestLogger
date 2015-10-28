@@ -1,6 +1,24 @@
 Changelog
 =========
 
+2.0.0 (unreleased)
+------------------
+
+- Log queries executed by ZMySQLDA.
+
+- Consolidate stack trace output to a single line if it's the same as the
+  previous stack trace.
+
+- Remove the seemly unused mechanism for changing the behaviour at runtime by
+  changing environment variables, like redirecting logging to a different
+  filename, stopping the logging or changing the timeouts. Log rotation still
+  works normally.
+
+- Stop creating and ending one extra thread per request. Instead, a single
+  monitoring thread is launched at startup.
+
+- Drop compatibility with Python < 2.6.
+
 1.1.0 (2012-09-10)
 ------------------
 
