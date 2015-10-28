@@ -15,8 +15,8 @@ description = "Dumps sequential stack traces of long-running Zope2 requests"
 setup(name='Products.LongRequestLogger',
       version=version,
       description=description,
-      long_description=open("README.txt").read() + "\n" +
-                       open(os.path.join("docs", "HISTORY.txt")).read(),
+      long_description=open("README.rst").read() + "\n" +
+                       open(os.path.join("docs", "HISTORY.rst")).read(),
       classifiers=[
         "Programming Language :: Python",
         "Framework :: Zope2",
