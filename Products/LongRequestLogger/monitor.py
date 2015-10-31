@@ -4,10 +4,11 @@
 #
 ##############################################################################
 
-import os, sys, threading, time
+import os, threading
 from collections import deque
 from select import select
 from thread import get_ident
+from time import time
 from .dumper import Dumper
 
 
@@ -39,22 +40,34 @@ class Monitor(threading.Thread):
         r = self.event_pipe[0]
         try:
             l = self.lock
+            rlist = r,
             dumpers = self.dumpers
             t = 0
-            while 1:
-                t = select([r], (), (), t)[0] and (os.read(r, 8) or sys.exit())
-                with l:
-                    if dumpers:
+            while not select(rlist, (), (), t)[0] or os.read(r, 8):
+                if dumpers:
+                    dumper = None
+                    try:
                         while 1:
-                            t = dumpers[0].next_dump - time.time()
+                            with l:
+                                now = time()
+                                if dumper is dumpers[0]:
+                                    del dumpers[0]
+                                    dumper.next_dump = now + self.interval
+                                    self.push(dumper)
+                                dumper = dumpers[0]
+                            t = dumper.next_dump - now
                             if t > 0:
                                 break
-                            dumper = dumpers.popleft()
-                            self.log.warning(dumper.format_thread())
-                            dumper.next_dump = time() + self.interval
-                            self.push(dumper)
-                    else:
-                        t = None
+                            # We released the lock to not block other threads
+                            # when logging. In particular, format_thread()
+                            # sometimes takes several seconds to process.
+                            msg = dumper.format_thread()
+                            if dumper is dumpers[0]:
+                                self.log.warning(msg)
+                        continue
+                    except IndexError: # dumpers empty
+                        pass
+                t = None
         finally:
             os.close(r)
 
