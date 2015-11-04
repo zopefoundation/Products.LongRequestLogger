@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.0.0 (unreleased)
+2.0.0 (2015-11-04)
 ------------------
 
 - Configuration is now done with a "product-config" section in zope.conf,
