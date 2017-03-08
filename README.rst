@@ -9,6 +9,9 @@ It was authored by Leonardo Rochael Almeida, and made possible with developer
 time generously donated by `Nexedi <http://www.nexedi.com/>`_, and with design
 input from Sébastien Robin and Julien Muchembled.
 
+.. WARNING:: Products.LongRequestLogger does not work if
+   `sauna.reload <https://pypi.python.org/pypi/sauna.reload>`_ is enabled.
+
 Installation
 ============
 
