@@ -4,8 +4,9 @@ Changelog
 2.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Log exceptions that are raised while dumping the request. Unprintable
+  requests caused the monitor thread to die, resulting in EPIPE errors
+  in the ZPublisher wrapper.
 
 2.0.0 (2015-11-04)
 ------------------

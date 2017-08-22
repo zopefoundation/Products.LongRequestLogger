@@ -87,14 +87,17 @@ class Dumper(object):
     def format_request(self, request):
         if request is None:
             return "[No request]\n"
-        query = request.get("QUERY_STRING")
-        return REQUEST_FORMAT % {
-            "method": request["REQUEST_METHOD"],
-            "url": request.getURL() + ("?" + query if query else ""),
-            "retries": request.retry_count,
-            "form": pformat(request.form),
-            "other": pformat(request.other),
-        }
+        try:
+            query = request.get("QUERY_STRING")
+            return REQUEST_FORMAT % {
+                "method": request["REQUEST_METHOD"],
+                "url": request.getURL() + ("?" + query if query else ""),
+                "retries": request.retry_count,
+                "form": pformat(request.form),
+                "other": pformat(request.other),
+            }
+        except Exception:
+            return "[Unprintable request]\n" + traceback.format_exc()
 
     def extract_request(self, frame):
         # We try to fetch the request from the 'call_object' function because
