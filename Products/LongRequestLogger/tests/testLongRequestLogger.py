@@ -33,41 +33,53 @@ Thread ...: Started on ...; Running for 0.0 secs; [No request]
 Traceback:
 ...
   File ".../LongRequestLogger/dumper.py", line ..., in format_thread
-    traceback.print_stack(frame, file=body)
+    stack = traceback.extract_stack(frame)
 ''')
 
-check_publishing_1_interval_log = SimpleOutputChecker('''
-Products.LongRequestLogger WARNING
-  Thread ...: Started on ...; Running for 2.0 secs; request: GET http://localhost
+_request = '''request: GET http://localhost
 retry count: 0
 form: {}
 other: {'ACTUAL_URL': 'http://localhost',
  'PARENTS': [],
- 'PUBLISHED': <Products.LongRequestLogger.tests.common.App object at 0x...>,
+ 'PUBLISHED': <function bobo_application at 0x...>,
  'RESPONSE': HTTPResponse(''),
  'SERVER_URL': 'http://localhost',
  'TraversalRequestNameStack': [],
  'URL': 'http://localhost',
- 'interval': 3.5,
- 'method': 'GET'}
-Traceback:
+ 'method': 'GET',
+ 'sleeper': <%s...>}'''
+
+_traceback = '''Traceback:
 ...
   File ".../LongRequestLogger/__init__.py", line ..., in publish_module_standard
     return publish_module_standard.original(*args, **kw)
   File ".../ZPublisher/Publish.py", line ..., in publish_module_standard
     response = publish(request, module_name, after_list, debug=debug)
 ...
+  File ".../LongRequestLogger/tests/common.py", line ..., in bobo_application
+    sleeper()
   File ".../LongRequestLogger/tests/common.py", line ..., in __call__
-    Sleeper(interval).sleep()
-  File ".../LongRequestLogger/tests/common.py", line ..., in sleep
-    self._sleep1()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep1
-    self._sleep2()
-  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep2
-    time.sleep(self.interval)
+    self._sleep(self._sleep%s)
+  File ".../LongRequestLogger/tests/common.py", line ..., in _sleep
+    time.sleep(interval)'''
+
+check_publishing_1_interval_log = SimpleOutputChecker('''
+Products.LongRequestLogger WARNING
+  Thread ...: Started on ...; Running for 2.0 secs; %s
+%s
 Products.LongRequestLogger WARNING
   Thread ...: Started on ...; Running for 3.0 secs; Same.
-''')
+Products.LongRequestLogger WARNING
+  Thread ...: Started on ...; Running for 4.0 secs; %s
+Products.LongRequestLogger WARNING
+  Thread ...: Started on ...; Running for 5.0 secs; %s
+Products.LongRequestLogger WARNING
+  Thread ...: Started on ...; Running for 6.0 secs; %s
+%s
+''' % (_request % '...Sleeper object at 0x', _traceback % 1,
+       _traceback % 2,
+       _request % 'time:',
+       _request % 'time:', _traceback % 3))
 
 check_request_formating = SimpleOutputChecker('''
 request: GET http://localhost/foo/bar
@@ -143,13 +155,21 @@ class TestLongRequestLogger(unittest.TestCase):
         check_request_formating(dumper.format_request(request))
 
     def testPublish(self):
+        from .common import Sleeper
         from ZPublisher.Publish import publish_module_standard
         # Before publishing, there should be no slow query records.
         self.assertFalse(self.loghandler.records)
-        # Request taking (timeout + interval + margin) 3.5 seconds...
-        request = self.makeRequest('/', interval=3.5)
-        request['interval'] = 3.5
-        publish_module_standard('Products.LongRequestLogger.tests.common',
+        request = self.makeRequest('/')
+        # 1. All information is dumped on initial timeout.
+        # 2. 1 second later, a single line is logged
+        #    because there's no new information.
+        # 3. Only the traceback changes and it is logged
+        #    without request information.
+        # 4. The request changes with same traceback:
+        #    only the request is logged.
+        # 5. The request changes with different traceback: full dump.
+        request['sleeper'] = Sleeper(3.5, 2, 1, 4.5)
+        publish_module_standard(Sleeper.__module__,
                                 request=request,
                                 response=request.response,
                                 debug=True)

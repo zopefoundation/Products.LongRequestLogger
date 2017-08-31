@@ -1,12 +1,14 @@
 Changelog
 =========
 
-2.0.1 (unreleased)
+2.1.0 (unreleased)
 ------------------
 
 - Log exceptions that are raised while dumping the request. Unprintable
   requests caused the monitor thread to die, resulting in EPIPE errors
   in the ZPublisher wrapper.
+
+- Do never repeat request information, traceback or SQL query if unchanged.
 
 2.0.0 (2015-11-04)
 ------------------

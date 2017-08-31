@@ -11,24 +11,28 @@ class Sleeper(object):
     file where the stack trace won't be affected by editing of the test file
     that uses it.
     """
+    _start = _changing_repr_delay = float('inf')
 
-    def __init__(self, interval):
-      self.interval = interval
+    def __init__(self, *args):
+        (self._sleep1, self._sleep2, self._sleep3,
+         self._changing_repr_delay) = args
 
-    def sleep(self):
-        self._sleep1()
+    def __repr__(self):
+        now = time.time()
+        if self._start + self._changing_repr_delay < now:
+            return '<time:%r>' % now
+        return object.__repr__(self)
 
-    def _sleep1(self):
-        self._sleep2()
+    def __call__(self):
+        self._start = time.time()
+        self._sleep(self._sleep1)
+        self._sleep(self._sleep2)
+        self._sleep(self._sleep3)
 
-    def _sleep2(self):
-        time.sleep(self.interval)
-
-class App(object):
-
-    def __call__(self, interval):
-        Sleeper(interval).sleep()
-        return "OK"
+    def _sleep(self, interval):
+        time.sleep(interval)
 
 # Enable this module to be published with ZPublisher.Publish.publish_module()
-bobo_application = App()
+def bobo_application(sleeper):
+    sleeper()
+    return "OK"

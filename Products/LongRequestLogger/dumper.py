@@ -74,7 +74,7 @@ other: %(other)s
 
 class Dumper(object):
 
-    _last = None
+    _last = None, None, None
 
     def __init__(self, thread_id=None):
         if thread_id is None:
@@ -128,19 +128,25 @@ class Dumper(object):
     def format_thread(self):
         subject = SUBJECT_FORMAT % (self.thread_id, self.start,
                                     time.time() - self.start)
-        body = StringIO()
         frame = sys._current_frames()[self.thread_id]
         try:
-            body.write(self.format_request(self.extract_request(frame)))
-            body.write("Traceback:\n")
-            traceback.print_stack(frame, file=body)
+            request = self.format_request(self.extract_request(frame))
+            stack = traceback.extract_stack(frame)
             query = self.extract_sql(frame)
-            if query:
-                body.write("SQL Query:\n%s\n" % query)
         finally:
             del frame
-        body = body.getvalue()
+        body = request, stack, query
         if self._last == body:
             return subject + "Same.\n"
+        result = StringIO()
+        result.write(subject)
+        if request != self._last[0]:
+            result.write(request)
+        if stack != self._last[1]:
+            result.write("Traceback:\n")
+            traceback.print_list(stack, result)
+        if query:
+            result.write("SQL Query:%s\n" % (
+                " Same." if query == self._last[2] else '\n' + query))
         self._last = body
-        return subject + body
+        return result.getvalue()
