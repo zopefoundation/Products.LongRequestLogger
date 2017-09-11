@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.1.0 (unreleased)
+2.1.0 (2017-09-11)
 ------------------
 
 - Log exceptions that are raised while dumping the request. Unprintable
